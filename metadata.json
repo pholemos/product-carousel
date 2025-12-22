@@ -1,0 +1,7 @@
+{
+  "name": "Global Affiliate Carousel",
+  "description": "A dynamic horizontal product carousel that filters affiliate deals based on the user's browser location, featuring Amazon and AliExpress products.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
