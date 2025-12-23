@@ -39,7 +39,7 @@
         #root {
             min-height: 100vh;
             display: flex;
-            align-items: flex-start; /* Align to top for better iframe fitting */
+            align-items: flex-start;
             justify-content: center;
             padding-top: 10px;
         }
@@ -73,7 +73,20 @@
             'Global': [], 
         };
 
-        const getUserRegion = () => {
+        // NEW: Real IP Geolocation Detection
+        const detectActualRegion = async () => {
+            try {
+                // Try IP-based detection first (most accurate for iframe)
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if (data.country_code) {
+                    return REGION_MAPPING[data.country_code] || 'Global';
+                }
+            } catch (e) {
+                console.warn('IP Geolocation failed, falling back to locale.');
+            }
+            
+            // Fallback: Browser Locale
             try {
                 const locale = Intl.DateTimeFormat().resolvedOptions().locale;
                 const countryCode = locale.split('-')[1]?.toUpperCase();
@@ -216,14 +229,19 @@
                 const initData = async () => {
                     try {
                         setLoading(true);
-                        const response = await fetch(DATA_URL);
-                        if (!response.ok) throw new Error('Fetch failed');
-                        const raw = await response.json();
                         
-                        const region = getUserRegion();
-                        const allowedTags = FILTER_RULES[region];
+                        // Perform Geo-check and Data-fetch in parallel
+                        const [geoRegion, dataRes] = await Promise.all([
+                            detectActualRegion(),
+                            fetch(DATA_URL)
+                        ]);
+
+                        if (!dataRes.ok) throw new Error('Data fetch failed');
+                        const raw = await dataRes.json();
                         
-                        let filtered = (region === 'Global' || !allowedTags || allowedTags.length === 0) 
+                        const allowedTags = FILTER_RULES[geoRegion];
+                        
+                        let filtered = (geoRegion === 'Global' || !allowedTags || allowedTags.length === 0) 
                             ? raw 
                             : raw.filter(p => allowedTags.includes(p.country) || p.shop.toLowerCase().includes('aliexpress'));
 
