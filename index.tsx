@@ -1,1 +1,1 @@
-// This file is no longer used as the application logic is consolidated in index.html for serverless operation.
+// Logic consolidated in index.html
