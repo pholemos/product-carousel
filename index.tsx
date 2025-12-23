@@ -1,2 +1,1 @@
-
-// All code has been moved to index.html to allow running via file:// without a web server.
+// This file is no longer used as the application logic is consolidated in index.html for serverless operation.
