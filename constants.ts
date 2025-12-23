@@ -15,5 +15,5 @@ export const FILTER_RULES: Record<SupportedRegion, string[]> = {
   'USA': ['USA', 'aliexpress'],
   'Spain': ['Spain', 'aliexpress'],
   'Germany': ['Germany', 'aliexpress'],
-  'Global': [], // Empty means show all
+  'Global': ['UK', 'aliexpress', 'USA', 'Spain', 'Germany'], // Empty means show all
 };

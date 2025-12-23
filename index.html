@@ -5,31 +5,276 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Global Deals Carousel</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & Babel Standalone for single-file operation -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #000000;
             color: #ffffff;
+            margin: 0;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Smooth scrolling for the carousel */
+        .carousel-container {
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
     </style>
-    <script type="importmap">
-    {
-      "imports": {
-        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-        "react/": "https://esm.sh/react@^19.2.3/",
-        "react": "https://esm.sh/react@^19.2.3"
-      }
-    }
-    </script>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3"
+  }
+}
+</script>
 </head>
 <body>
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- CONSTANTS ---
+        const DATA_URL = 'https://raw.githubusercontent.com/pholemos/youtube-carousel/refs/heads/main/Affiliate_List.json';
+
+        const REGION_MAPPING = {
+            'GB': 'UK',
+            'US': 'USA',
+            'ES': 'Spain',
+            'DE': 'Germany',
+        };
+
+        const FILTER_RULES = {
+            'UK': ['UK', 'aliexpress'],
+            'USA': ['USA', 'aliexpress'],
+            'Spain': ['Spain', 'aliexpress'],
+            'Germany': ['Germany', 'aliexpress'],
+            'Global': [],
+        };
+
+        // --- UTILS ---
+        const getUserRegion = () => {
+            try {
+                const locale = Intl.DateTimeFormat().resolvedOptions().locale;
+                const countryCode = locale.split('-')[1]?.toUpperCase() || 'US';
+                return REGION_MAPPING[countryCode] || 'Global';
+            } catch (error) {
+                return 'Global';
+            }
+        };
+
+        // --- COMPONENTS ---
+
+        const ProductCard = ({ product }) => {
+            const isAmazon = product.shop.toLowerCase().includes('amazon');
+            
+            return (
+                <a 
+                    href={product.affiliateLink || '#'} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-none w-[75vw] sm:w-64 md:w-72 bg-zinc-900 rounded-xl shadow-lg border border-zinc-800 overflow-hidden transition-all duration-300 hover:border-zinc-700 active:scale-[0.98] sm:hover:-translate-y-1 block touch-manipulation"
+                >
+                    <div className="aspect-[4/3] w-full overflow-hidden bg-white/5 flex items-center justify-center relative group">
+                        <img 
+                            src={product.imgLink} 
+                            alt={product.title} 
+                            className="w-full h-full object-contain p-3 sm:p-4 transition-transform duration-500 sm:group-hover:scale-110"
+                            loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-black/5 sm:group-hover:bg-transparent transition-colors duration-300"></div>
+                        {product.affiliateLink && (
+                            <div className="absolute top-2 right-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="bg-indigo-600 text-white p-1.5 rounded-full shadow-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                                        <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div className="p-3 sm:p-4 flex flex-col h-28 sm:h-32 justify-between">
+                        <h3 className="text-xs sm:text-sm font-semibold text-zinc-100 line-clamp-2 leading-tight sm:leading-snug">
+                            {product.title}
+                        </h3>
+                        <div className="mt-2 flex items-center justify-between">
+                            <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md uppercase tracking-wider ${
+                                isAmazon 
+                                    ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
+                                    : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                            }`}>
+                                {product.shop}
+                            </span>
+                            <span className="text-[9px] sm:text-[10px] text-zinc-500 font-medium italic">
+                                {product.country}
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            );
+        };
+
+        const Carousel = ({ products }) => {
+            const scrollRef = useRef(null);
+            const [isPaused, setIsPaused] = useState(false);
+            const [showLeftArrow, setShowLeftArrow] = useState(false);
+            const [showRightArrow, setShowRightArrow] = useState(true);
+
+            const handleScrollState = () => {
+                if (scrollRef.current) {
+                    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+                    setShowLeftArrow(scrollLeft > 20);
+                    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 20);
+                }
+            };
+
+            const scroll = (direction) => {
+                if (scrollRef.current) {
+                    const { scrollLeft, clientWidth, scrollWidth } = scrollRef.current;
+                    let scrollTo;
+                    if (direction === 'left') {
+                        scrollTo = scrollLeft - clientWidth * 0.8;
+                        if (scrollTo < 0) scrollTo = scrollWidth - clientWidth;
+                    } else {
+                        scrollTo = scrollLeft + clientWidth * 0.8;
+                        if (scrollTo + clientWidth >= scrollWidth - 10) scrollTo = 0;
+                    }
+                    scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+                }
+            };
+
+            useEffect(() => {
+                if (isPaused || products.length <= 1) return;
+                const interval = setInterval(() => scroll('right'), 5000);
+                return () => clearInterval(interval);
+            }, [isPaused, products.length]);
+
+            if (products.length === 0) return null;
+
+            return (
+                <div 
+                    className="relative py-4 sm:py-8"
+                    onMouseEnter={() => setIsPaused(true)}
+                    onMouseLeave={() => setIsPaused(false)}
+                    onTouchStart={() => setIsPaused(true)}
+                    onTouchEnd={() => setIsPaused(false)}
+                >
+                    <div className="relative group">
+                        {/* Navigation - Left */}
+                        <div className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-6 z-10 transition-opacity duration-300 hidden sm:block ${showLeftArrow ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                            <button onClick={() => scroll('left')} className="p-3 rounded-full border border-zinc-700 bg-zinc-900/80 backdrop-blur-sm text-zinc-100 shadow-xl hover:bg-zinc-800 hover:scale-110 active:scale-95 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Navigation - Right */}
+                        <div className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-6 z-10 transition-opacity duration-300 hidden sm:block ${showRightArrow ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                            <button onClick={() => scroll('right')} className="p-3 rounded-full border border-zinc-700 bg-zinc-900/80 backdrop-blur-sm text-zinc-100 shadow-xl hover:bg-zinc-800 hover:scale-110 active:scale-95 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div 
+                            ref={scrollRef}
+                            onScroll={handleScrollState}
+                            className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 sm:pb-6 scrollbar-hide snap-x px-4 sm:px-0 carousel-container"
+                            style={{ scrollSnapType: 'x mandatory' }}
+                        >
+                            {products.map((p, i) => (
+                                <div key={`${p.title}-${i}`} className="snap-center sm:snap-start">
+                                    <ProductCard product={p} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="sm:hidden flex flex-col items-center mt-2 space-y-1">
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest animate-pulse">Swipe to browse</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [products, setProducts] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [region, setRegion] = useState('Global');
+
+            useEffect(() => {
+                const initData = async () => {
+                    try {
+                        setLoading(true);
+                        const response = await fetch(DATA_URL);
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        const rawProducts = await response.json();
+                        
+                        setProducts(rawProducts);
+                        setRegion(getUserRegion());
+                        setError(null);
+                    } catch (err) {
+                        setError('Unable to load deals. Please check your connection.');
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                initData();
+            }, []);
+
+            const filteredProducts = useMemo(() => {
+                const allowedTags = FILTER_RULES[region];
+                if (region === 'Global' || allowedTags.length === 0) return products;
+
+                return products.filter(product => {
+                    const countryMatch = allowedTags.includes(product.country);
+                    const shopMatch = product.shop.toLowerCase().includes('aliexpress');
+                    return countryMatch || shopMatch;
+                });
+            }, [products, region]);
+
+            return (
+                <div className="min-h-screen bg-black flex flex-col selection:bg-indigo-500/30">
+                    <main className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center h-64 space-y-4">
+                                <div className="w-10 h-10 border-2 border-zinc-800 border-t-indigo-500 rounded-full animate-spin"></div>
+                                <p className="text-zinc-500 text-sm font-medium">Hunting for deals...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-10 text-center max-w-md mx-auto">
+                                <h3 className="text-zinc-100 font-bold mb-2">Something went wrong</h3>
+                                <p className="text-zinc-500 text-sm mb-6">{error}</p>
+                                <button onClick={() => window.location.reload()} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-500 transition-colors">Retry</button>
+                            </div>
+                        ) : (
+                            <Carousel products={filteredProducts} />
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
