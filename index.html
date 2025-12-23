@@ -73,25 +73,44 @@
             'Global': [], 
         };
 
-        // NEW: Real IP Geolocation Detection
+        // ENHANCED: Dual-Provider IP Geolocation Detection
         const detectActualRegion = async () => {
+            // Attempt 1: ipapi.co (Standard)
             try {
-                // Try IP-based detection first (most accurate for iframe)
                 const res = await fetch('https://ipapi.co/json/');
-                const data = await res.json();
-                if (data.country_code) {
-                    return REGION_MAPPING[data.country_code] || 'Global';
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.country_code) {
+                        console.log('Region detected via ipapi.co:', data.country_code);
+                        return REGION_MAPPING[data.country_code] || 'Global';
+                    }
                 }
             } catch (e) {
-                console.warn('IP Geolocation failed, falling back to locale.');
+                console.warn('ipapi.co blocked or failed.');
             }
             
-            // Fallback: Browser Locale
+            // Attempt 2: freeipapi.com (Robust Fallback)
+            try {
+                const res = await fetch('https://freeipapi.com/api/json');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.countryCode) {
+                        console.log('Region detected via freeipapi.com:', data.countryCode);
+                        return REGION_MAPPING[data.countryCode] || 'Global';
+                    }
+                }
+            } catch (e) {
+                console.warn('freeipapi.com blocked or failed.');
+            }
+            
+            // Fallback 3: Browser Locale (Last resort)
             try {
                 const locale = Intl.DateTimeFormat().resolvedOptions().locale;
                 const countryCode = locale.split('-')[1]?.toUpperCase();
+                console.log('Falling back to locale detection:', countryCode);
                 return REGION_MAPPING[countryCode] || 'Global';
             } catch (e) {
+                console.error('All geolocation attempts failed.');
                 return 'Global';
             }
         };
@@ -245,6 +264,7 @@
                             ? raw 
                             : raw.filter(p => allowedTags.includes(p.country) || p.shop.toLowerCase().includes('aliexpress'));
 
+                        // Final safety: if filter removes everything, show the raw list
                         if (filtered.length === 0) filtered = raw;
 
                         setProducts(filtered);
